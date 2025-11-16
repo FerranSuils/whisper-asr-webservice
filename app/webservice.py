@@ -149,8 +149,8 @@ def start(host: str, port: Optional[int] = None):
     }
     
     # Only set limit_max_requests if there's a specific limit (None = unlimited)
-    if CONFIG.MAX_FILE_SIZE > 0:
-        uvicorn_config["limit_max_requests"] = CONFIG.MAX_FILE_SIZE
+    # if CONFIG.MAX_FILE_SIZE > 0:
+    uvicorn_config["limit_max_requests"] = None
     
     uvicorn.run(app, **uvicorn_config)
 
