@@ -1,4 +1,5 @@
 import importlib.metadata
+import logging
 import os
 from os import path
 from typing import Annotated, Optional, Union
@@ -15,6 +16,10 @@ from whisper import tokenizer
 from app.config import CONFIG
 from app.factory.asr_model_factory import ASRModelFactory
 from app.utils import load_audio
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 asr_model = ASRModelFactory.create_asr_model()
 asr_model.load_model()
@@ -92,8 +97,18 @@ async def asr(
     output: Union[str, None] = Query(default="txt", enum=["txt", "vtt", "srt", "tsv", "json"]),
 ):
     try:
+        logger.info(f"Starting transcription for file: {audio_file.filename} ({audio_file.content_type})")
+        logger.info(f"Parameters - Task: {task}, Language: {language}, Output: {output}")
+        
+        # Load and process audio
+        logger.info("Loading audio file...")
+        audio_data = load_audio(audio_file.file, encode)
+        logger.info(f"Audio loaded successfully, shape: {audio_data.shape if hasattr(audio_data, 'shape') else 'N/A'}")
+        
+        # Transcribe
+        logger.info("Starting transcription...")
         result = asr_model.transcribe(
-            load_audio(audio_file.file, encode),
+            audio_data,
             task,
             language,
             initial_prompt,
@@ -102,6 +117,8 @@ async def asr(
             {"diarize": diarize, "min_speakers": min_speakers, "max_speakers": max_speakers},
             output,
         )
+        logger.info("Transcription completed successfully")
+        
         return StreamingResponse(
             result,
             media_type="text/plain",
@@ -111,8 +128,7 @@ async def asr(
             },
         )
     except Exception as e:
-        import logging
-        logging.error(f"Error during transcription: {str(e)}")
+        logger.error(f"Error during transcription: {str(e)}", exc_info=True)
         raise
 
 
