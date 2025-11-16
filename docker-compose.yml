@@ -8,6 +8,7 @@ services:
     environment:
       - ASR_MODEL=base
       - MAX_FILE_SIZE=0  # 0 = unlimited file size
+      - ASR_QUANTIZATION=float32  # Explicitly use FP32 on CPU to avoid FP16 warning
     ports:
       - "9000:9000"
     volumes:
