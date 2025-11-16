@@ -141,16 +141,15 @@ async def detect_language(
 )
 @click.version_option(version=projectMetadata["Version"])
 def start(host: str, port: Optional[int] = None):
-    # Configure uvicorn with increased limits for large file uploads
+    # Configure uvicorn with increased limits for large file uploads and long processing
     uvicorn_config = {
         "host": host,
         "port": port,
-        "timeout_keep_alive": 300,  # Increased timeout for large file uploads
+        "timeout_keep_alive": 7200,  # 2 hours - for very long audio files
+        "timeout_graceful_shutdown": 300,  # 5 minutes for graceful shutdown
+        "limit_concurrency": None,  # No concurrency limit
+        "backlog": 2048,  # Increase backlog for queued connections
     }
-    
-    # Only set limit_max_requests if there's a specific limit (None = unlimited)
-    # if CONFIG.MAX_FILE_SIZE > 0:
-    uvicorn_config["limit_max_requests"] = None
     
     uvicorn.run(app, **uvicorn_config)
 
