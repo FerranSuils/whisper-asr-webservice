@@ -47,6 +47,20 @@ docker run -d -p 9000:9000 \
   onerahmet/openai-whisper-asr-webservice:latest
 ```
 
+### Troubleshooting DNS Issues
+
+If you encounter DNS resolution errors during model download, configure DNS servers:
+
+```shell
+docker run -d --dns 8.8.8.8 --dns 8.8.4.4 -p 9000:9000 \
+  -e ASR_MODEL=base \
+  onerahmet/openai-whisper-asr-webservice:latest
+```
+
+Or use docker-compose (DNS already configured in the provided files).
+
+For more troubleshooting help, see the [Troubleshooting Guide](docs/troubleshooting.md).
+
 ## Key Features
 
 - Multiple ASR engines support (OpenAI Whisper, Faster Whisper, WhisperX)

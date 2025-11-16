@@ -58,6 +58,16 @@ export SAMPLE_RATE=16000
 
 Defaults to `16000`. Default sample rate for audio input. `16 kHz` is commonly used in `speech-to-text` tasks.
 
+### Configuring Maximum File Size
+
+```shell
+export MAX_FILE_SIZE=0
+```
+
+Defaults to `0` (unlimited). Maximum file size for audio uploads in bytes. Setting this to `0` allows unlimited file sizes, which is useful for processing very large audio files. If you need to limit uploads, set this to a specific number of bytes (e.g., `524288000` for 500MB).
+
+**Note:** With unlimited file size, the service can process audio files of any length without splitting them. Make sure your server has enough memory and disk space to handle large files.
+
 ### Configuring Device and Quantization
 
 ```shell

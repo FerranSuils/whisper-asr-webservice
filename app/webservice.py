@@ -31,6 +31,9 @@ app = FastAPI(
     license_info={"name": "MIT License", "url": "https://github.com/ahmetoner/whisper-asr-webservice/blob/main/LICENCE"},
 )
 
+# Configure maximum upload size (0 = unlimited)
+app.state.max_upload_size = CONFIG.MAX_FILE_SIZE
+
 assets_path = os.getcwd() + "/swagger-ui-assets"
 if path.exists(assets_path + "/swagger-ui.css") and path.exists(assets_path + "/swagger-ui-bundle.js"):
     app.mount("/assets", StaticFiles(directory=assets_path), name="static")
@@ -138,7 +141,15 @@ async def detect_language(
 )
 @click.version_option(version=projectMetadata["Version"])
 def start(host: str, port: Optional[int] = None):
-    uvicorn.run(app, host=host, port=port)
+    # Configure uvicorn with increased limits for large file uploads
+    # Setting limit_max_requests to 0 means unlimited request body size
+    uvicorn.run(
+        app,
+        host=host,
+        port=port,
+        limit_max_requests=0 if CONFIG.MAX_FILE_SIZE == 0 else None,
+        timeout_keep_alive=300,  # Increased timeout for large file uploads
+    )
 
 
 if __name__ == "__main__":

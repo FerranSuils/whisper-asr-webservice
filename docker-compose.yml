@@ -7,11 +7,16 @@ services:
       dockerfile: Dockerfile
     environment:
       - ASR_MODEL=base
+      - MAX_FILE_SIZE=0  # 0 = unlimited file size
     ports:
       - "9000:9000"
     volumes:
       - ./app:/app/app
       - cache-whisper:/root/.cache
+    # DNS configuration to resolve download issues
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
 
 volumes:
   cache-whisper:

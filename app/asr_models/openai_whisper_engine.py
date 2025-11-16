@@ -2,6 +2,7 @@ import time
 from io import StringIO
 from threading import Thread
 from typing import BinaryIO, Union
+from urllib.error import URLError
 
 import torch
 import whisper
@@ -14,13 +15,37 @@ from app.config import CONFIG
 class OpenAIWhisperASR(ASRModel):
 
     def load_model(self):
-
-        if torch.cuda.is_available():
-            self.model = whisper.load_model(name=CONFIG.MODEL_NAME, download_root=CONFIG.MODEL_PATH).cuda()
-        else:
-            self.model = whisper.load_model(name=CONFIG.MODEL_NAME, download_root=CONFIG.MODEL_PATH)
-
-        Thread(target=self.monitor_idleness, daemon=True).start()
+        max_retries = 3
+        retry_delay = 5
+        
+        for attempt in range(max_retries):
+            try:
+                if torch.cuda.is_available():
+                    self.model = whisper.load_model(name=CONFIG.MODEL_NAME, download_root=CONFIG.MODEL_PATH).cuda()
+                else:
+                    self.model = whisper.load_model(name=CONFIG.MODEL_NAME, download_root=CONFIG.MODEL_PATH)
+                
+                Thread(target=self.monitor_idleness, daemon=True).start()
+                break
+            except URLError as e:
+                if attempt < max_retries - 1:
+                    print(f"Failed to download model (attempt {attempt + 1}/{max_retries}): {e}")
+                    print(f"Retrying in {retry_delay} seconds...")
+                    time.sleep(retry_delay)
+                else:
+                    print(f"\n{'='*80}")
+                    print("ERROR: Failed to download Whisper model after multiple attempts.")
+                    print("\nPossible solutions:")
+                    print("1. Check your internet connection")
+                    print("2. If using Docker, try configuring DNS:")
+                    print("   docker run --dns 8.8.8.8 --dns 8.8.4.4 ...")
+                    print("3. Pre-download the model and mount it as a volume:")
+                    print(f"   - Model path: {CONFIG.MODEL_PATH}")
+                    print(f"   - Model name: {CONFIG.MODEL_NAME}")
+                    print("4. Use a cached model directory:")
+                    print("   docker run -v /path/to/cache:/root/.cache ...")
+                    print(f"{'='*80}\n")
+                    raise
 
     def transcribe(
         self,

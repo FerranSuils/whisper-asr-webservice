@@ -14,15 +14,38 @@ from app.utils import ResultWriter, WriteJSON, WriteSRT, WriteTSV, WriteTXT, Wri
 class FasterWhisperASR(ASRModel):
 
     def load_model(self):
-
-        self.model = WhisperModel(
-            model_size_or_path=CONFIG.MODEL_NAME,
-            device=CONFIG.DEVICE,
-            compute_type=CONFIG.MODEL_QUANTIZATION,
-            download_root=CONFIG.MODEL_PATH
-        )
-
-        Thread(target=self.monitor_idleness, daemon=True).start()
+        max_retries = 3
+        retry_delay = 5
+        
+        for attempt in range(max_retries):
+            try:
+                self.model = WhisperModel(
+                    model_size_or_path=CONFIG.MODEL_NAME,
+                    device=CONFIG.DEVICE,
+                    compute_type=CONFIG.MODEL_QUANTIZATION,
+                    download_root=CONFIG.MODEL_PATH
+                )
+                
+                Thread(target=self.monitor_idleness, daemon=True).start()
+                break
+            except Exception as e:
+                if "name resolution" in str(e).lower() or "connection" in str(e).lower():
+                    if attempt < max_retries - 1:
+                        print(f"Failed to download model (attempt {attempt + 1}/{max_retries}): {e}")
+                        print(f"Retrying in {retry_delay} seconds...")
+                        time.sleep(retry_delay)
+                    else:
+                        print(f"\n{'='*80}")
+                        print("ERROR: Failed to download Faster-Whisper model after multiple attempts.")
+                        print("\nPossible solutions:")
+                        print("1. Check your internet connection")
+                        print("2. Configure DNS: docker run --dns 8.8.8.8 --dns 8.8.4.4 ...")
+                        print("3. Use a cached model directory:")
+                        print("   docker run -v /path/to/cache:/root/.cache ...")
+                        print(f"{'='*80}\n")
+                        raise
+                else:
+                    raise
 
     def transcribe(
             self,
