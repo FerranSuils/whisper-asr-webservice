@@ -1,4 +1,5 @@
 import time
+import warnings
 from io import StringIO
 from threading import Thread
 from typing import BinaryIO, Union
@@ -11,6 +12,9 @@ from whisper.utils import ResultWriter, WriteJSON, WriteSRT, WriteTSV, WriteTXT,
 from app.asr_models.asr_model import ASRModel
 from app.config import CONFIG
 
+# Suppress FP16 warning on CPU
+warnings.filterwarnings("ignore", message="FP16 is not supported on CPU; using FP32 instead")
+
 
 class OpenAIWhisperASR(ASRModel):
 
@@ -20,10 +24,17 @@ class OpenAIWhisperASR(ASRModel):
         
         for attempt in range(max_retries):
             try:
+                # Force FP32 on CPU to avoid FP16 warning and potential issues
+                device = "cuda" if torch.cuda.is_available() else "cpu"
+                
                 if torch.cuda.is_available():
                     self.model = whisper.load_model(name=CONFIG.MODEL_NAME, download_root=CONFIG.MODEL_PATH).cuda()
                 else:
-                    self.model = whisper.load_model(name=CONFIG.MODEL_NAME, download_root=CONFIG.MODEL_PATH)
+                    # On CPU, explicitly use FP32
+                    self.model = whisper.load_model(name=CONFIG.MODEL_NAME, download_root=CONFIG.MODEL_PATH, device="cpu")
+                    # Ensure model is in FP32
+                    if hasattr(self.model, 'to'):
+                        self.model = self.model.float()
                 
                 Thread(target=self.monitor_idleness, daemon=True).start()
                 break

@@ -18,6 +18,15 @@ services:
     dns:
       - 8.8.8.8
       - 8.8.4.4
+    # Resource limits to prevent OOM issues
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+        reservations:
+          memory: 4G
+    # Restart policy to handle unexpected crashes
+    restart: unless-stopped
 
 volumes:
   cache-whisper:

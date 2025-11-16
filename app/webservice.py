@@ -91,24 +91,29 @@ async def asr(
     ),
     output: Union[str, None] = Query(default="txt", enum=["txt", "vtt", "srt", "tsv", "json"]),
 ):
-    result = asr_model.transcribe(
-        load_audio(audio_file.file, encode),
-        task,
-        language,
-        initial_prompt,
-        vad_filter,
-        word_timestamps,
-        {"diarize": diarize, "min_speakers": min_speakers, "max_speakers": max_speakers},
-        output,
-    )
-    return StreamingResponse(
-        result,
-        media_type="text/plain",
-        headers={
-            "Asr-Engine": CONFIG.ASR_ENGINE,
-            "Content-Disposition": f'attachment; filename="{quote(audio_file.filename)}.{output}"',
-        },
-    )
+    try:
+        result = asr_model.transcribe(
+            load_audio(audio_file.file, encode),
+            task,
+            language,
+            initial_prompt,
+            vad_filter,
+            word_timestamps,
+            {"diarize": diarize, "min_speakers": min_speakers, "max_speakers": max_speakers},
+            output,
+        )
+        return StreamingResponse(
+            result,
+            media_type="text/plain",
+            headers={
+                "Asr-Engine": CONFIG.ASR_ENGINE,
+                "Content-Disposition": f'attachment; filename="{quote(audio_file.filename)}.{output}"',
+            },
+        )
+    except Exception as e:
+        import logging
+        logging.error(f"Error during transcription: {str(e)}")
+        raise
 
 
 @app.post("/detect-language", tags=["Endpoints"])
@@ -143,15 +148,18 @@ async def detect_language(
 def start(host: str, port: Optional[int] = None):
     # Configure uvicorn with increased limits for large file uploads and long processing
     uvicorn_config = {
+        "app": app,
         "host": host,
         "port": port,
         "timeout_keep_alive": 7200,  # 2 hours - for very long audio files
         "timeout_graceful_shutdown": 300,  # 5 minutes for graceful shutdown
         "limit_concurrency": None,  # No concurrency limit
         "backlog": 2048,  # Increase backlog for queued connections
+        "log_level": "info",
+        "access_log": True,
     }
     
-    uvicorn.run(app, **uvicorn_config)
+    uvicorn.run(**uvicorn_config)
 
 
 if __name__ == "__main__":
