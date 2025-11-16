@@ -43,7 +43,7 @@ class CONFIG:
 
     # Maximum file size for uploads in bytes. 0 means no limit.
     # Default is 0 (unlimited) to allow large audio files
-    MAX_FILE_SIZE = int(os.getenv("MAX_FILE_SIZE", 0))
+    MAX_FILE_SIZE = 0
 
     # Subtitle output options for whisperx
     SUBTITLE_MAX_LINE_WIDTH = int(os.getenv("SUBTITLE_MAX_LINE_WIDTH", 1000))

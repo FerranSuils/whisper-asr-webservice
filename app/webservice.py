@@ -32,7 +32,7 @@ app = FastAPI(
 )
 
 # Configure maximum upload size (0 = unlimited)
-app.state.max_upload_size = CONFIG.MAX_FILE_SIZE
+app.state.max_upload_size = 0
 
 assets_path = os.getcwd() + "/swagger-ui-assets"
 if path.exists(assets_path + "/swagger-ui.css") and path.exists(assets_path + "/swagger-ui-bundle.js"):
